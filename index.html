@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attention Residuals Explained</title>
+    <meta name="description" content="An interactive visual explanation of MoonshotAI's Attention Residuals: replacing fixed residual connections with learned attention over depth">
+    <meta property="og:title" content="Attention Residuals Explained">
+    <meta property="og:description" content="Interactive explainer for MoonshotAI's Attention Residuals paper">
+    <meta property="og:image" content="./assets/og-image.png">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
+
+    <main>
+        <!-- Hero -->
+        <section class="hero" id="hero">
+            <h1>Attention Residuals Explained</h1>
+            <p class="subtitle">Replacing fixed residual connections with learned attention over depth</p>
+            <div class="hero-links">
+                <a href="https://arxiv.org/abs/2501.12245" class="paper-link" target="_blank">Read the Paper</a>
+                <a href="https://github.com/MoonshotAI/Attention-Residual" class="repo-link" target="_blank">Official Implementation</a>
+            </div>
+        </section>
+
+        <!-- The Problem -->
+        <section class="section" id="problem">
+            <h2>The Problem with Standard Residual Connections</h2>
+            <p class="intro">In standard Transformers, each layer's output is added to a residual stream with <strong>fixed unit weights</strong>. This creates three fundamental issues:</p>
+
+            <div class="diagram-container">
+                <svg id="standard-residual-diagram" viewBox="0 0 600 400"></svg>
+            </div>
+
+            <div class="problem-list">
+                <div class="problem-item">
+                    <div class="problem-number">1</div>
+                    <div class="problem-content">
+                        <h3>No Selective Access</h3>
+                        <p>All layers receive the same aggregated state. No way to selectively access specific earlier representations.</p>
+                    </div>
+                </div>
+                <div class="problem-item">
+                    <div class="problem-number">2</div>
+                    <div class="problem-content">
+                        <h3>Irreversible Information Loss</h3>
+                        <p>Once outputs are summed, individual layer contributions cannot be recovered.</p>
+                    </div>
+                </div>
+                <div class="problem-item">
+                    <div class="problem-number">3</div>
+                    <div class="problem-content">
+                        <h3>Output Magnitude Growth</h3>
+                        <p>Deeper layers must produce larger outputs to remain influential in the accumulated sum.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Insight -->
+        <section class="section" id="insight">
+            <h2>The Key Insight</h2>
+            <p class="intro">Instead of fixed summation, use <strong>learned attention</strong> to selectively aggregate layer outputs based on content.</p>
+
+            <div class="comparison-container">
+                <div class="comparison-side">
+                    <h3>Standard Residual</h3>
+                    <div class="formula">h<sub>l</sub> = h<sub>l-1</sub> + f<sub>l</sub>(h<sub>l-1</sub>)</div>
+                    <p class="formula-caption">Fixed unit weights</p>
+                </div>
+                <div class="comparison-side">
+                    <h3>Attention Residual</h3>
+                    <div class="formula">h<sub>l</sub> = Σ α<sub>i→l</sub> · v<sub>i</sub></div>
+                    <p class="formula-caption">Learned attention weights</p>
+                </div>
+            </div>
+
+            <div class="interactive-comparison">
+                <div class="slider-container">
+                    <label for="transition-slider">
+                        <span class="slider-label-left">Standard</span>
+                        <input type="range" id="transition-slider" min="0" max="100" value="0">
+                        <span class="slider-label-right">Attention</span>
+                    </label>
+                </div>
+                <svg id="comparison-diagram" viewBox="0 0 600 400"></svg>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="section" id="how-it-works">
+            <h2>How It Works</h2>
+            <p class="intro">Each layer computes attention weights over all previous layer outputs using learned pseudo-query vectors.</p>
+
+            <div class="steps-container">
+                <div class="step" data-step="1">
+                    <div class="step-number">Step 1</div>
+                    <div class="step-content">
+                        <h3>Pseudo-Query Vectors</h3>
+                        <p>Each layer l has learnable query vectors <code>Q<sub>l</sub></code> that represent what information it needs.</p>
+                    </div>
+                </div>
+
+                <div class="step" data-step="2">
+                    <div class="step-number">Step 2</div>
+                    <div class="step-content">
+                        <h3>Compute Attention Weights</h3>
+                        <p>Calculate attention scores between queries and all previous layer outputs:</p>
+                        <div class="formula">α<sub>i→l</sub> = softmax(Q<sub>l</sub> · v<sub>i</sub><sup>T</sup> / √d)</div>
+                    </div>
+                </div>
+
+                <div class="step" data-step="3">
+                    <div class="step-number">Step 3</div>
+                    <div class="step-content">
+                        <h3>Weighted Aggregation</h3>
+                        <p>Aggregate previous outputs using the learned weights:</p>
+                        <div class="formula">h<sub>l</sub> = Σ<sub>i=0</sub><sup>l-1</sup> α<sub>i→l</sub> · v<sub>i</sub></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="diagram-container">
+                <svg id="mechanism-diagram" viewBox="0 0 700 450"></svg>
+                <div class="mechanism-controls">
+                    <button class="btn-primary" id="animate-mechanism">Animate Attention Flow</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Block AttnRes -->
+        <section class="section" id="block-attnres">
+            <h2>Block AttnRes: The Practical Variant</h2>
+            <p class="intro">Full attention over all layers has O(Ld) memory cost. <strong>Block AttnRes</strong> partitions layers into blocks and attends over block-level representations instead.</p>
+
+            <div class="block-comparison">
+                <div class="block-side">
+                    <h3>Full AttnRes</h3>
+                    <p>Memory: O(Ld)</p>
+                    <p class="detail">Each layer attends over all previous outputs</p>
+                </div>
+                <div class="block-side">
+                    <h3>Block AttnRes</h3>
+                    <p>Memory: O(Nd)</p>
+                    <p class="detail">N blocks &lt;&lt; L layers</p>
+                </div>
+            </div>
+
+            <div class="interactive-blocks">
+                <div class="block-controls">
+                    <label for="num-blocks">Number of blocks: <span id="block-count">4</span></label>
+                    <input type="range" id="num-blocks" min="2" max="8" value="4" step="2">
+                </div>
+                <svg id="block-diagram" viewBox="0 0 600 400"></svg>
+            </div>
+
+            <div class="insight-box">
+                <h3>Key Benefit</h3>
+                <p>Block AttnRes achieves <strong>~1.25x compute reduction</strong> while matching or exceeding baseline performance by enabling efficient selective access to earlier representations.</p>
+            </div>
+        </section>
+
+        <!-- Results -->
+        <section class="section" id="results">
+            <h2>Results</h2>
+            <p class="intro">Block AttnRes shows significant improvements across reasoning and coding benchmarks:</p>
+
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="benchmark-name">MMLU (5-shot)</div>
+                    <div class="result-bar">
+                        <div class="bar baseline" style="width: 84.2%">
+                            <span class="bar-label">84.2</span>
+                        </div>
+                    </div>
+                    <div class="result-bar">
+                        <div class="bar improved" style="width: 85.1%">
+                            <span class="bar-label">85.1</span>
+                        </div>
+                    </div>
+                    <div class="improvement">+0.9</div>
+                </div>
+
+                <div class="result-card highlight">
+                    <div class="benchmark-name">GPQA-Diamond</div>
+                    <div class="result-bar">
+                        <div class="bar baseline" style="width: 55.5%">
+                            <span class="bar-label">55.5</span>
+                        </div>
+                    </div>
+                    <div class="result-bar">
+                        <div class="bar improved" style="width: 63.0%">
+                            <span class="bar-label">63.0</span>
+                        </div>
+                    </div>
+                    <div class="improvement">+7.5</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="benchmark-name">Math (0-shot)</div>
+                    <div class="result-bar">
+                        <div class="bar baseline" style="width: 78.4%">
+                            <span class="bar-label">78.4</span>
+                        </div>
+                    </div>
+                    <div class="result-bar">
+                        <div class="bar improved" style="width: 80.2%">
+                            <span class="bar-label">80.2</span>
+                        </div>
+                    </div>
+                    <div class="improvement">+1.8</div>
+                </div>
+
+                <div class="result-card highlight">
+                    <div class="benchmark-name">HumanEval</div>
+                    <div class="result-bar">
+                        <div class="bar baseline" style="width: 88.4%">
+                            <span class="bar-label">88.4</span>
+                        </div>
+                    </div>
+                    <div class="result-bar">
+                        <div class="bar improved" style="width: 91.5%">
+                            <span class="bar-label">91.5</span>
+                        </div>
+                    </div>
+                    <div class="improvement">+3.1</div>
+                </div>
+            </div>
+
+            <div class="results-legend">
+                <div class="legend-item">
+                    <div class="legend-color baseline"></div>
+                    <span>Baseline</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color improved"></div>
+                    <span>Block AttnRes</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="https://arxiv.org/abs/2501.12245" target="_blank">ArXiv Paper</a></li>
+                        <li><a href="https://github.com/MoonshotAI/Attention-Residual" target="_blank">Official Implementation</a></li>
+                        <li><a href="https://github.com/unispark-inc/attention-residuals-explained" target="_blank">This Explainer (Source)</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Citation</h3>
+                    <pre class="citation">@article{ye2025attention,
+  title={Attention Residual: Generalizing Residual to Attention},
+  author={Ye, Zhuoyan and Liu, Yilei and Zhang, Zikang and Gu, Yutao and others},
+  journal={arXiv preprint arXiv:2501.12245},
+  year={2025}
+}</pre>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Built with ❤️ for the ML community | <a href="https://github.com/unispark-inc/attention-residuals-explained/blob/main/LICENSE" target="_blank">MIT License</a></p>
+            </div>
+        </footer>
+    </main>
+
+    <script src="js/diagrams.js"></script>
+    <script src="js/interactive.js"></script>
+</body>
+</html>
