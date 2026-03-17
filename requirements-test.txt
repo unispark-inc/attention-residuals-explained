@@ -1,0 +1,6 @@
+pytest>=9.0.0
+beautifulsoup4>=4.14.0
+cssutils>=2.11.0
+pyyaml>=6.0
+lxml>=6.0.0
+html5lib>=1.1
